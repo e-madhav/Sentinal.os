@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SENTINAL.OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --neon-cyan: #00f5ff;
+      --neon-pink: #ff006e;
+      --neon-green: #39ff14;
+      --neon-purple: #bf00ff;
+      --gold: #ffd700;
+      --bg-deep: #020409;
+      --bg-panel: rgba(0, 245, 255, 0.03);
+      --border-glow: rgba(0, 245, 255, 0.2);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--bg-deep);
+      color: #c0d8e0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      cursor: crosshair;
+    }
+
+    /* ── CANVAS BACKGROUND ── */
+    #bgCanvas {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
+    }
+
+    /* ── SCAN LINE OVERLAY ── */
+    body::after {
+      content: '';
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,245,255,0.015) 2px,
+        rgba(0,245,255,0.015) 4px
+      );
+      pointer-events: none; z-index: 1;
+      animation: scanDown 8s linear infinite;
+    }
+    @keyframes scanDown {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 100vh; }
+    }
+
+    /* ── CURSOR GLOW ── */
+    #cursorGlow {
+      position: fixed; width: 300px; height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,245,255,0.06) 0%, transparent 70%);
+      pointer-events: none; z-index: 2;
+      transform: translate(-50%, -50%);
+      transition: transform 0.1s ease;
+    }
+
+    /* ── LAYOUT ── */
+    #app {
+      position: relative; z-index: 10;
+      max-width: 1400px; margin: 0 auto;
+      padding: 24px 20px;
+    }
+
+    /* ── HEADER ── */
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+      animation: fadeDown 0.8s ease both;
+    }
+    .header-eyebrow {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 6px;
+      color: var(--neon-cyan);
+      opacity: 0.7;
+      margin-bottom: 8px;
+      animation: blink 3s step-end infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:0.7} 50%{opacity:0.3} }
+
+    h1.logo {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(2.4rem, 6vw, 5rem);
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink), var(--neon-cyan));
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: logoShift 4s linear infinite, fadeDown 0.8s ease both;
+      filter: drop-shadow(0 0 20px rgba(0,245,255,0.3));
+    }
+    @keyframes logoShift { 0%{background-position:0% 50%} 100%{background-position:300% 50%} }
+
+    .header-sub {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 4px;
+      color: rgba(255,0,110,0.8);
+      margin-top: 6px;
+    }
+
+    /* ── GRID ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    @media(max-width:900px){ .main-grid{ grid-template-columns:1fr; } }
+
+    /* ── PANEL ── */
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-glow);
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp 0.6s ease both;
+    }
+    .panel::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+      animation: scanLine 3s ease-in-out infinite;
+    }
+    @keyframes scanLine {
+      0%,100%{ opacity: 0.3; transform: scaleX(0.5); }
+      50%{ opacity: 1; transform: scaleX(1); }
+    }
+
+    /* corner decoration */
+    .panel::after {
+      content: '';
+      position: absolute; bottom: 0; right: 0;
+      width: 20px; height: 20px;
+      border-bottom: 2px solid var(--neon-cyan);
+      border-right: 2px solid var(--neon-cyan);
+      opacity: 0.5;
+    }
+
+    .panel-header {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-glow);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 4px;
+      color: var(--neon-cyan);
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(0,245,255,0.03);
+    }
+    .panel-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--neon-cyan);
+      animation: pulse 2s ease infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+
+    .panel-body { padding: 20px; }
+
+    /* ── FILE INPUT ── */
+    .file-drop {
+      border: 1px dashed rgba(0,245,255,0.3);
+      border-radius: 2px;
+      padding: 30px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      background: rgba(0,245,255,0.02);
+    }
+    .file-drop:hover, .file-drop.drag-over {
+      border-color: var(--neon-cyan);
+      background: rgba(0,245,255,0.06);
+      box-shadow: inset 0 0 30px rgba(0,245,255,0.05), 0 0 20px rgba(0,245,255,0.1);
+    }
+    .file-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .file-drop-icon { font-size: 2rem; margin-bottom: 8px; opacity: 0.7; }
+    .file-drop-text {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px; color: var(--neon-cyan);
+      letter-spacing: 2px;
+    }
+    #fileNameDisplay {
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--neon-green);
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 16px;
+    }
+
+    /* ── MODE SELECTOR ── */
+    .mode-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: rgba(192,216,224,0.5);
+      margin-bottom: 10px;
+      margin-top: 20px;
+    }
+    .mode-options { display: flex; flex-direction: column; gap: 8px; }
+    .mode-option {
+      position: relative;
+      cursor: pointer;
+      padding: 14px 16px;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 2px;
+      display: flex; align-items: center; gap: 12px;
+      transition: all 0.3s ease;
+      background: rgba(255,255,255,0.02);
+    }
+    .mode-option:hover { border-color: rgba(0,245,255,0.3); background: rgba(0,245,255,0.03); }
+    .mode-option input { display: none; }
+    .mode-option.selected-hack {
+      border-color: var(--neon-pink);
+      background: rgba(255,0,110,0.06);
+      box-shadow: 0 0 20px rgba(255,0,110,0.1), inset 0 0 20px rgba(255,0,110,0.03);
+    }
+    .mode-option.selected-defend {
+      border-color: var(--neon-green);
+      background: rgba(57,255,20,0.06);
+      box-shadow: 0 0 20px rgba(57,255,20,0.1), inset 0 0 20px rgba(57,255,20,0.03);
+    }
+    .mode-radio {
+      width: 12px; height: 12px; border-radius: 50%;
+      border: 2px solid currentColor;
+      flex-shrink: 0; transition: all 0.2s;
+    }
+    .selected-hack .mode-radio { background: var(--neon-pink); border-color: var(--neon-pink); box-shadow: 0 0 8px var(--neon-pink); }
+    .selected-defend .mode-radio { background: var(--neon-green); border-color: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
+    .mode-title { font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700; letter-spacing: 1px; }
+    .mode-desc { font-size: 11px; color: rgba(192,216,224,0.5); margin-top: 2px; }
+
+    /* ── SCAN BUTTON ── */
+    #analyzeBtn {
+      margin-top: 24px;
+      width: 100%; padding: 16px;
+      background: transparent;
+      border: 1px solid var(--neon-cyan);
+      border-radius: 2px;
+      font-family: 'Orbitron', monospace;
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 4px;
+      color: var(--neon-cyan);
+      cursor: pointer;
+      position: relative; overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    #analyzeBtn::before {
+      content: ''; position: absolute; inset: 0;
+      background: var(--neon-cyan);
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      z-index: 0;
+    }
+    #analyzeBtn:hover::before { transform: translateX(0); }
+    #analyzeBtn:hover { color: #000; box-shadow: 0 0 30px rgba(0,245,255,0.4); }
+    #analyzeBtn span, #analyzeBtn .loader { position: relative; z-index: 1; }
+    #analyzeBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .loader {
+      display: none; width: 16px; height: 16px;
+      border: 2px solid rgba(0,245,255,0.3);
+      border-top-color: var(--neon-cyan);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── ERROR ── */
+    #errorMsg {
+      display: none; margin-top: 12px;
+      padding: 10px 14px;
+      border: 1px solid var(--neon-pink);
+      background: rgba(255,0,110,0.05);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px; color: var(--neon-pink);
+      letter-spacing: 1px;
+    }
+
+    /* ── RIGHT SIDE MONITORS ── */
+    .monitors-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media(max-width:600px){ .monitors-grid{ grid-template-columns:1fr; } }
+
+    /* ── MONITOR ── */
+    .monitor { animation: fadeUp 0.7s ease both; }
+    .monitor:nth-child(2) { animation-delay: 0.1s; }
+
+    .monitor-screen {
+      width: 100%;
+      aspect-ratio: 1;
+      background: #000;
+      border: 1px solid var(--border-glow);
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+    }
+    .monitor-screen img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: opacity 0.3s ease;
+    }
+    .monitor-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent 60%, rgba(0,245,255,0.05));
+      pointer-events: none;
+    }
+    /* crosshair corners */
+    .monitor-screen::before, .monitor-screen::after {
+      content: ''; position: absolute;
+      width: 20px; height: 20px;
+      z-index: 5;
+    }
+    .monitor-screen::before {
+      top: 8px; left: 8px;
+      border-top: 2px solid var(--neon-cyan);
+      border-left: 2px solid var(--neon-cyan);
+      opacity: 0.6;
+    }
+    .monitor-screen::after {
+      bottom: 8px; right: 8px;
+      border-bottom: 2px solid var(--neon-cyan);
+      border-right: 2px solid var(--neon-cyan);
+      opacity: 0.6;
+    }
+
+    /* scan animation on image */
+    .scanning-beam {
+      position: absolute; top: -10%; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+      opacity: 0;
+      animation: beamScan 2s ease-in-out infinite;
+    }
+    @keyframes beamScan {
+      0%{ top: -5%; opacity: 0; }
+      10%{ opacity: 0.8; }
+      90%{ opacity: 0.8; }
+      100%{ top: 105%; opacity: 0; }
+    }
+
+    .monitor-data {
+      padding: 14px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid var(--border-glow);
+      border-top: none;
+    }
+    .monitor-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px; letter-spacing: 3px;
+      color: rgba(0,245,255,0.5);
+      margin-bottom: 6px;
+    }
+    .monitor-label {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(12px, 2vw, 18px);
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .monitor-conf {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+    }
+    .monitor-status {
+      font-size: 9px;
+      letter-spacing: 3px;
+      font-family: 'Share Tech Mono', monospace;
+      padding: 3px 8px;
+      border-radius: 1px;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+    .status-neutral { background: rgba(0,245,255,0.1); color: var(--neon-cyan); border: 1px solid rgba(0,245,255,0.3); }
+    .status-threat  { background: rgba(255,0,110,0.1); color: var(--neon-pink); border: 1px solid rgba(255,0,110,0.3); }
+    .status-safe    { background: rgba(57,255,20,0.1); color: var(--neon-green); border: 1px solid rgba(57,255,20,0.3); }
+
+    /* confidence bar */
+    .conf-bar-wrap { height: 3px; background: rgba(255,255,255,0.05); margin-top: 8px; border-radius: 1px; overflow: hidden; }
+    .conf-bar { height: 100%; border-radius: 1px; transition: width 0.8s cubic-bezier(.2,.8,.2,1); }
+    .bar-base { background: var(--neon-cyan); }
+    .bar-threat { background: var(--neon-pink); }
+    .bar-safe { background: var(--neon-green); }
+
+    /* ── PROCESS STRIP ── */
+    .process-strip {
+      margin-top: 20px;
+      padding: 16px 20px;
+      background: rgba(0,245,255,0.02);
+      border: 1px solid var(--border-glow);
+      border-radius: 2px;
+      display: flex; gap: 0; align-items: center;
+      animation: fadeUp 0.9s ease both;
+    }
+    .process-step {
+      flex: 1; text-align: center;
+      padding: 8px;
+      position: relative;
+    }
+    .process-step:not(:last-child)::after {
+      content: '──▶';
+      position: absolute; right: -14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--neon-cyan); opacity: 0.4;
+      font-size: 12px;
+    }
+    .step-icon { font-size: 1.4rem; margin-bottom: 4px; }
+    .step-title { font-family: 'Orbitron', monospace; font-size: 9px; letter-spacing: 2px; color: var(--neon-cyan); }
+    .step-desc { font-size: 10px; color: rgba(192,216,224,0.4); margin-top: 2px; }
+
+    /* ── ONBOARDING MODAL ── */
+    #overlay {
+      position: fixed; inset: 0;
+      background: rgba(2,4,9,0.95);
+      z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      animation: overlayIn 0.5s ease both;
+    }
+    @keyframes overlayIn { from{opacity:0} to{opacity:1} }
+
+    #modal {
+      background: #050d14;
+      border: 1px solid rgba(0,245,255,0.3);
+      border-radius: 2px;
+      max-width: 780px; width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      animation: modalIn 0.6s cubic-bezier(.2,.8,.2,1) both;
+      box-shadow: 0 0 80px rgba(0,245,255,0.08), 0 0 160px rgba(191,0,255,0.05);
+    }
+    @keyframes modalIn { from{opacity:0;transform:scale(0.95) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
+
+    /* scrollbar */
+    #modal::-webkit-scrollbar { width: 4px; }
+    #modal::-webkit-scrollbar-track { background: transparent; }
+    #modal::-webkit-scrollbar-thumb { background: rgba(0,245,255,0.2); }
+
+    .modal-top {
+      padding: 32px 32px 24px;
+      border-bottom: 1px solid rgba(0,245,255,0.1);
+      position: sticky; top: 0; background: #050d14; z-index: 2;
+    }
+    .modal-badge {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px; letter-spacing: 5px;
+      color: var(--neon-pink);
+      margin-bottom: 10px;
+    }
+    .modal-title {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(1.4rem, 4vw, 2.2rem);
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: 0.05em;
+    }
+    .modal-title span {
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .modal-subtitle { font-size: 13px; color: rgba(192,216,224,0.5); margin-top: 8px; }
+
+    .modal-body { padding: 28px 32px; }
+
+    /* sections inside modal */
+    .info-section { margin-bottom: 32px; }
+    .info-section:last-child { margin-bottom: 0; }
+
+    .section-eyebrow {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px; letter-spacing: 4px;
+      color: var(--neon-cyan); opacity: 0.6;
+      margin-bottom: 10px;
+    }
+    .section-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 14px; font-weight: 700;
+      color: #fff; margin-bottom: 12px;
+    }
+    .section-text { font-size: 13px; line-height: 1.8; color: rgba(192,216,224,0.65); }
+
+    /* step cards */
+    .step-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px; margin-top: 16px;
+    }
+    .step-card {
+      border: 1px solid rgba(0,245,255,0.1);
+      border-radius: 2px;
+      padding: 16px;
+      background: rgba(0,245,255,0.02);
+      position: relative; overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .step-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    }
+    .step-card:nth-child(1)::before { background: var(--neon-cyan); }
+    .step-card:nth-child(2)::before { background: var(--neon-pink); }
+    .step-card:nth-child(3)::before { background: var(--neon-purple); }
+    .step-card:nth-child(4)::before { background: var(--neon-green); }
+    .step-card:hover { border-color: rgba(0,245,255,0.3); transform: translateY(-2px); background: rgba(0,245,255,0.04); }
+    .step-card-num {
+      font-family: 'Orbitron', monospace;
+      font-size: 28px; font-weight: 900;
+      color: rgba(0,245,255,0.1);
+      line-height: 1; margin-bottom: 8px;
+    }
+    .step-card-title { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px; color: #fff; margin-bottom: 6px; }
+    .step-card-text { font-size: 11px; line-height: 1.7; color: rgba(192,216,224,0.5); }
+
+    /* visual diagram */
+    .flow-diagram {
+      margin: 20px 0;
+      display: flex; align-items: stretch; gap: 0;
+      border: 1px solid rgba(0,245,255,0.1);
+      border-radius: 2px; overflow: hidden;
+    }
+    .flow-node {
+      flex: 1; padding: 14px 10px; text-align: center;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px; letter-spacing: 1px;
+    }
+    .flow-node:nth-child(1) { background: rgba(0,245,255,0.05); color: var(--neon-cyan); }
+    .flow-node:nth-child(2) { background: rgba(255,0,110,0.05); color: var(--neon-pink); border-left: 1px solid rgba(255,0,110,0.15); border-right: 1px solid rgba(255,0,110,0.15); }
+    .flow-node:nth-child(3) { background: rgba(57,255,20,0.05); color: var(--neon-green); }
+    .flow-node-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+    .flow-arrow {
+      display: flex; align-items: center; padding: 0 4px;
+      color: rgba(0,245,255,0.3); font-size: 14px;
+    }
+
+    /* monitor legend */
+    .monitor-legend {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      margin-top: 12px;
+    }
+    .legend-item {
+      padding: 12px; border-radius: 2px;
+      border: 1px solid;
+    }
+    .legend-item.base { border-color: rgba(0,245,255,0.2); background: rgba(0,245,255,0.03); }
+    .legend-item.hack { border-color: rgba(255,0,110,0.2); background: rgba(255,0,110,0.03); }
+    .legend-item.defend { border-color: rgba(57,255,20,0.2); background: rgba(57,255,20,0.03); }
+    .legend-item-title { font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700; margin-bottom: 4px; }
+    .legend-item.base .legend-item-title { color: var(--neon-cyan); }
+    .legend-item.hack .legend-item-title { color: var(--neon-pink); }
+    .legend-item.defend .legend-item-title { color: var(--neon-green); }
+    .legend-item-text { font-size: 11px; color: rgba(192,216,224,0.5); line-height: 1.6; }
+
+    /* enter button */
+    #enterBtn {
+      display: block; width: 100%;
+      padding: 18px;
+      margin-top: 28px;
+      background: transparent;
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      font-family: 'Orbitron', monospace;
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 6px;
+      cursor: pointer;
+      position: relative; overflow: hidden;
+      transition: all 0.3s ease;
+      border-radius: 2px;
+    }
+    #enterBtn::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+      transform: translateX(-100%);
+      transition: transform 0.4s ease;
+      z-index: 0;
+    }
+    #enterBtn:hover::before { transform: translateX(0); }
+    #enterBtn:hover { color: #000; box-shadow: 0 0 40px rgba(0,245,255,0.3); }
+    #enterBtn span { position: relative; z-index: 1; }
+
+    /* ── STAT BAR ── */
+    .stat-bar {
+      margin-top: 16px;
+      display: flex; gap: 16px; flex-wrap: wrap;
+    }
+    .stat-item {
+      flex: 1; min-width: 80px;
+      padding: 12px;
+      border: 1px solid rgba(0,245,255,0.1);
+      background: rgba(0,245,255,0.02);
+      text-align: center;
+    }
+    .stat-val {
+      font-family: 'Orbitron', monospace;
+      font-size: 18px; font-weight: 900;
+      color: var(--neon-cyan);
+    }
+    .stat-lbl { font-size: 9px; letter-spacing: 2px; color: rgba(192,216,224,0.4); margin-top: 2px; font-family: 'Share Tech Mono', monospace; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeUp   { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+    /* glitch text effect */
+    .glitch {
+      position: relative;
+    }
+    .glitch::before, .glitch::after {
+      content: attr(data-text);
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: var(--bg-deep);
+    }
+    .glitch::before {
+      color: var(--neon-cyan);
+      animation: glitch1 4s infinite;
+      clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+    }
+    .glitch::after {
+      color: var(--neon-pink);
+      animation: glitch2 4s infinite;
+      clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+    }
+    @keyframes glitch1 {
+      0%,90%,100%{transform:none;opacity:0}
+      92%{transform:translateX(-3px);opacity:0.8}
+      94%{transform:translateX(3px);opacity:0.8}
+      96%{transform:none;opacity:0}
+    }
+    @keyframes glitch2 {
+      0%,92%,100%{transform:none;opacity:0}
+      94%{transform:translateX(3px);opacity:0.8}
+      96%{transform:translateX(-3px);opacity:0.8}
+      98%{transform:none;opacity:0}
+    }
+
+    /* progress bar animated */
+    .progress-track {
+      height: 2px; background: rgba(255,255,255,0.05);
+      margin: 20px 0; position: relative; overflow: hidden;
+    }
+    .progress-fill {
+      position: absolute; left: 0; top: 0; height: 100%;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+      animation: progressAnim 3s ease-in-out infinite;
+    }
+    @keyframes progressAnim {
+      0%{width:0%;left:0} 50%{width:60%;left:20%} 100%{width:0%;left:100%}
+    }
+
+    /* ── HELP BUTTON ── */
+    #helpBtn {
+      position: fixed; bottom: 24px; right: 24px;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: rgba(0,245,255,0.1);
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      font-family: 'Orbitron', monospace;
+      font-size: 14px; font-weight: 900;
+      cursor: pointer; z-index: 100;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 20px rgba(0,245,255,0.2);
+    }
+    #helpBtn:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 30px rgba(0,245,255,0.5); }
+
+    /* ── TICKER ── */
+    .ticker-wrap {
+      overflow: hidden;
+      border-top: 1px solid rgba(0,245,255,0.1);
+      border-bottom: 1px solid rgba(0,245,255,0.1);
+      padding: 8px 0; margin: 20px 0;
+      background: rgba(0,245,255,0.02);
+    }
+    .ticker {
+      display: flex; gap: 60px;
+      white-space: nowrap;
+      animation: ticker 20s linear infinite;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px; letter-spacing: 2px;
+      color: rgba(0,245,255,0.4);
+    }
+    @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+    /* image placeholder SVG */
+    .placeholder-img {
+      width: 100%; aspect-ratio: 1;
+      background: linear-gradient(135deg, #040b12, #080f18);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 10px;
+    }
+    .placeholder-icon { font-size: 2.5rem; opacity: 0.2; }
+    .placeholder-text { font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 3px; color: rgba(0,245,255,0.2); }
+  </style>
+</head>
+<body>
+
+<!-- Animated particle canvas -->
+<canvas id="bgCanvas"></canvas>
+<div id="cursorGlow"></div>
+
+<!-- ── ONBOARDING MODAL ── -->
+<div id="overlay">
+  <div id="modal">
+    <div class="modal-top">
+      <div class="modal-badge">// SYSTEM BRIEFING — CLASSIFICATION: UNRESTRICTED</div>
+      <div class="modal-title">Welcome to <span>SENTINAL.OS</span></div>
+      <div class="modal-subtitle">Neural Threat Purification Framework — Adversarial Attack & Defense Simulator</div>
+      <div class="progress-track"><div class="progress-fill"></div></div>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- What is this -->
+      <div class="info-section">
+        <div class="section-eyebrow">// MISSION OVERVIEW</div>
+        <div class="section-title">What Is SENTINAL.OS?</div>
+        <div class="section-text">
+          SENTINAL.OS is an AI-powered adversarial machine learning demonstration platform.
+          It showcases how neural networks can be fooled by invisible pixel-level attacks —
+          and how a trained UNet purifier can neutralize those threats in real time.
+          Upload any face image to see the system in action across three phases: baseline analysis, attack simulation, and threat neutralization.
+        </div>
+        <div class="stat-bar">
+          <div class="stat-item"><div class="stat-val">EfficientNet</div><div class="stat-lbl">CLASSIFIER</div></div>
+          <div class="stat-item"><div class="stat-val">PGD</div><div class="stat-lbl">ATTACKER</div></div>
+          <div class="stat-item"><div class="stat-val">UNet</div><div class="stat-lbl">PURIFIER</div></div>
+          <div class="stat-item"><div class="stat-val">MTCNN</div><div class="stat-lbl">DETECTOR</div></div>
+        </div>
+      </div>
+
+      <!-- How to use -->
+      <div class="info-section">
+        <div class="section-eyebrow">// OPERATIONAL GUIDE</div>
+        <div class="section-title">How To Use The System</div>
+        <div class="step-cards">
+          <div class="step-card">
+            <div class="step-card-num">01</div>
+            <div class="step-card-title">Upload Face Image</div>
+            <div class="step-card-text">Drop any portrait or facial image into the INPUT MEDIA panel. MTCNN will auto-detect and crop the face region.</div>
+          </div>
+          <div class="step-card">
+            <div class="step-card-num">02</div>
+            <div class="step-card-title">Choose Threat Mode</div>
+            <div class="step-card-text">Select <strong style="color:var(--neon-pink)">Hacker Mode</strong> to simulate an adversarial attack, or <strong style="color:var(--neon-green)">Defense Shields</strong> to see the purifier respond.</div>
+          </div>
+          <div class="step-card">
+            <div class="step-card-num">03</div>
+            <div class="step-card-title">Initiate Scan</div>
+            <div class="step-card-text">Press INITIATE SCAN. The backend runs inference, generates the adversarial image, and purifies it — returning all 3 results.</div>
+          </div>
+          <div class="step-card">
+            <div class="step-card-num">04</div>
+            <div class="step-card-title">Analyze Results</div>
+            <div class="step-card-text">Toggle between Hacker and Defense modes live after scanning. Compare the classifier's prediction before and after each phase.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flow diagram -->
+      <div class="info-section">
+        <div class="section-eyebrow">// PIPELINE ARCHITECTURE</div>
+        <div class="section-title">The 3-Stage Processing Pipeline</div>
+        <div class="flow-diagram">
+          <div class="flow-node">
+            <span class="flow-node-icon">📸</span>
+            CLEAN INPUT<br><br>
+            <span style="font-size:9px;opacity:0.6">Face detected<br>+ normalized<br>+ classified</span>
+          </div>
+          <div class="flow-arrow">▶</div>
+          <div class="flow-node">
+            <span class="flow-node-icon">👾</span>
+            PGD ATTACK<br><br>
+            <span style="font-size:9px;opacity:0.6">Invisible noise<br>injected to fool<br>the classifier</span>
+          </div>
+          <div class="flow-arrow">▶</div>
+          <div class="flow-node">
+            <span class="flow-node-icon">🛡️</span>
+            PURIFICATION<br><br>
+            <span style="font-size:9px;opacity:0.6">UNet removes<br>adversarial noise<br>restoring accuracy</span>
+          </div>
+        </div>
+        <div class="section-text">
+          The <strong style="color:var(--neon-pink)">PGD (Projected Gradient Descent)</strong> attacker crafts imperceptible perturbations (ε=8/255) that cause the EfficientNet-B0 classifier to misidentify the subject. The <strong style="color:var(--neon-green)">UNet purifier</strong>, trained to denoise adversarial patterns, strips the attack signal — recovering correct classification with high confidence.
+        </div>
+      </div>
+
+      <!-- Monitor guide -->
+      <div class="info-section">
+        <div class="section-eyebrow">// MONITOR GUIDE</div>
+        <div class="section-title">Understanding The Two Displays</div>
+        <div class="monitor-legend">
+          <div class="legend-item base">
+            <div class="legend-item-title">MONITOR 1 — CLEAN REF</div>
+            <div class="legend-item-text">Always shows the original, unmodified face crop and the classifier's honest baseline prediction (REAL or DEEPFAKE).</div>
+          </div>
+          <div class="legend-item hack">
+            <div class="legend-item-title">MONITOR 2 — HACKER MODE</div>
+            <div class="legend-item-text">Displays the adversarially perturbed image. The noise is invisible to humans but causes the AI to misclassify.</div>
+          </div>
+          <div class="legend-item defend" style="grid-column: 1 / -1;">
+            <div class="legend-item-title">MONITOR 2 — DEFENSE SHIELDS</div>
+            <div class="legend-item-text">Shows the purified output. The UNet has removed adversarial perturbations and the classifier correctly identifies the subject again. Toggle between modes after a single scan — no need to re-upload.</div>
+          </div>
+        </div>
+      </div>
+
+      <button id="enterBtn" onclick="closeModal()"><span>▶ ENTER THE SYSTEM</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div id="app">
+  <header>
+    <div class="header-eyebrow">// NEURAL DEFENSE SYSTEM V2.4.1 — ONLINE</div>
+    <h1 class="logo glitch" data-text="SENTINAL.OS">SENTINAL.OS</h1>
+    <div class="header-sub">ADVERSARIAL THREAT PURIFICATION FRAMEWORK</div>
+  </header>
+
+  <!-- ticker -->
+  <div class="ticker-wrap">
+    <div class="ticker">
+      <span>◈ SYSTEM NOMINAL</span>
+      <span>◈ EfficientNet-B0 LOADED</span>
+      <span>◈ UNet PURIFIER ACTIVE</span>
+      <span>◈ MTCNN FACE DETECTOR READY</span>
+      <span>◈ PGD ATTACKER STANDBY</span>
+      <span>◈ AWAITING INPUT SIGNAL</span>
+      <span>◈ SYSTEM NOMINAL</span>
+      <span>◈ EfficientNet-B0 LOADED</span>
+      <span>◈ UNet PURIFIER ACTIVE</span>
+      <span>◈ MTCNN FACE DETECTOR READY</span>
+      <span>◈ PGD ATTACKER STANDBY</span>
+      <span>◈ AWAITING INPUT SIGNAL</span>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <!-- LEFT PANEL -->
+    <div>
+      <div class="panel" style="animation-delay:0.1s">
+        <div class="panel-header"><div class="panel-dot"></div>INPUT_MEDIA.SYS</div>
+        <div class="panel-body">
+          <div class="file-drop" id="fileDrop">
+            <input type="file" id="fileInput" accept="image/*">
+            <div class="file-drop-icon">📂</div>
+            <div class="file-drop-text">DROP IMAGE / CLICK TO UPLOAD</div>
+            <div id="fileNameDisplay">NO FILE SELECTED</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:16px; animation-delay:0.2s">
+        <div class="panel-header"><div class="panel-dot" style="background:var(--neon-pink); animation-duration:1.5s"></div>THREAT_ENVIRONMENT.CFG</div>
+        <div class="panel-body">
+          <div class="mode-label">// SELECT OPERATIONAL MODE</div>
+          <div class="mode-options">
+            <label class="mode-option selected-hack" id="modeHack">
+              <input type="radio" name="mode" value="hacked" checked>
+              <div class="mode-radio"></div>
+              <div>
+                <div class="mode-title" style="color:var(--neon-pink)">👾 HACKER MODE</div>
+                <div class="mode-desc">Adversarial PGD attack active — system compromised</div>
+              </div>
+            </label>
+            <label class="mode-option" id="modeDefend">
+              <input type="radio" name="mode" value="defended">
+              <div class="mode-radio"></div>
+              <div>
+                <div class="mode-title" style="color:var(--neon-green)">🛡️ DEFENSE SHIELDS</div>
+                <div class="mode-desc">UNet purifier online — threat neutralized</div>
+              </div>
+            </label>
+          </div>
+
+          <button id="analyzeBtn">
+            <span id="btnText">▶ INITIATE SCAN</span>
+            <div class="loader" id="spinner"></div>
+          </button>
+
+          <div id="errorMsg"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT MONITORS -->
+    <div>
+      <div class="monitors-grid">
+        <!-- Monitor 1: Baseline -->
+        <div class="monitor">
+          <div class="panel-header" style="border-radius:2px 2px 0 0"><div class="panel-dot"></div>MON-01 // CLEAN REFERENCE</div>
+          <div class="monitor-screen" id="baseScreen">
+            <div class="placeholder-img" id="basePlaceholder">
+              <div class="placeholder-icon">📸</div>
+              <div class="placeholder-text">AWAITING INPUT</div>
+            </div>
+            <img id="baseImg" style="display:none" alt="baseline">
+            <div class="monitor-overlay"></div>
+            <div class="scanning-beam"></div>
+          </div>
+          <div class="monitor-data">
+            <div class="monitor-title">// BASELINE ANALYSIS</div>
+            <div class="monitor-status status-neutral" id="baseStatus">STANDBY</div>
+            <div class="monitor-label" id="baseLabel">—</div>
+            <div class="monitor-conf" style="color:var(--neon-cyan)" id="baseConf">—</div>
+            <div class="conf-bar-wrap"><div class="conf-bar bar-base" id="baseBar" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <!-- Monitor 2: Live/Active -->
+        <div class="monitor" id="liveMonitor">
+          <div class="panel-header" id="liveHeader" style="border-radius:2px 2px 0 0"><div class="panel-dot" id="liveDot"></div><span id="liveHeaderText">MON-02 // ACTIVE SENSOR</span></div>
+          <div class="monitor-screen" id="liveScreen">
+            <div class="placeholder-img" id="livePlaceholder">
+              <div class="placeholder-icon">⚡</div>
+              <div class="placeholder-text">AWAITING SIGNAL</div>
+            </div>
+            <img id="liveImg" style="display:none" alt="live">
+            <div class="monitor-overlay"></div>
+            <div class="scanning-beam" style="animation-delay:-1s"></div>
+          </div>
+          <div class="monitor-data" id="liveDataBox">
+            <div class="monitor-title" id="liveStatus">// SYSTEM STATUS</div>
+            <div class="monitor-status" id="liveStatusBadge">STANDBY</div>
+            <div class="monitor-label" id="liveLabel">—</div>
+            <div class="monitor-conf" id="liveConf">—</div>
+            <div class="conf-bar-wrap"><div class="conf-bar bar-threat" id="liveBar" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Process strip -->
+      <div class="process-strip" style="animation-delay:0.3s">
+        <div class="process-step">
+          <div class="step-icon">🔍</div>
+          <div class="step-title">DETECT</div>
+          <div class="step-desc">MTCNN face crop</div>
+        </div>
+        <div class="process-step">
+          <div class="step-icon">🧠</div>
+          <div class="step-title">CLASSIFY</div>
+          <div class="step-desc">EfficientNet-B0</div>
+        </div>
+        <div class="process-step">
+          <div class="step-icon">👾</div>
+          <div class="step-title">ATTACK</div>
+          <div class="step-desc">PGD ε=8/255</div>
+        </div>
+        <div class="process-step">
+          <div class="step-icon">🛡️</div>
+          <div class="step-title">PURIFY</div>
+          <div class="step-desc">UNet denoiser</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Help re-open button -->
+<button id="helpBtn" onclick="openModal()" title="Open system briefing">?</button>
+
+<script>
+  /* ── PARTICLE CANVAS ── */
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+  function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+
+  class Particle {
+    constructor(){
+      this.x = Math.random() * W;
+      this.y = Math.random() * H;
+      this.vx = (Math.random() - 0.5) * 0.3;
+      this.vy = (Math.random() - 0.5) * 0.3;
+      this.r = Math.random() * 1.2 + 0.3;
+      this.a = Math.random() * 0.4 + 0.05;
+    }
+    update(){ this.x += this.vx; this.y += this.vy; if(this.x<0||this.x>W) this.vx*=-1; if(this.y<0||this.y>H) this.vy*=-1; }
+    draw(){
+      ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+      ctx.fillStyle = `rgba(0,245,255,${this.a})`; ctx.fill();
+    }
+  }
+  for(let i=0; i<120; i++) particles.push(new Particle());
+
+  function drawLines(){
+    for(let i=0;i<particles.length;i++){
+      for(let j=i+1;j<particles.length;j++){
+        const dx=particles[i].x-particles[j].x, dy=particles[i].y-particles[j].y;
+        const d=Math.sqrt(dx*dx+dy*dy);
+        if(d<120){
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x,particles[i].y);
+          ctx.lineTo(particles[j].x,particles[j].y);
+          ctx.strokeStyle=`rgba(0,245,255,${0.05*(1-d/120)})`;
+          ctx.lineWidth=0.5; ctx.stroke();
+        }
+      }
+    }
+  }
+  function animate(){
+    ctx.clearRect(0,0,W,H);
+    particles.forEach(p=>{ p.update(); p.draw(); });
+    drawLines();
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  /* ── CURSOR GLOW ── */
+  const glow = document.getElementById('cursorGlow');
+  document.addEventListener('mousemove', e => {
+    glow.style.left = e.clientX + 'px';
+    glow.style.top  = e.clientY + 'px';
+  });
+
+  /* ── MODAL ── */
+  function closeModal(){
+    const ov = document.getElementById('overlay');
+    ov.style.animation = 'overlayIn 0.4s ease reverse both';
+    setTimeout(()=>{ ov.style.display='none'; }, 400);
+  }
+  function openModal(){
+    const ov = document.getElementById('overlay');
+    ov.style.display='flex';
+    ov.style.animation = 'overlayIn 0.4s ease both';
+  }
+
+  /* ── FILE INPUT ── */
+  const fileInput = document.getElementById('fileInput');
+  const fileDrop  = document.getElementById('fileDrop');
+  const fileNameDisplay = document.getElementById('fileNameDisplay');
+
+  fileInput.addEventListener('change', () => {
+    if(fileInput.files[0]) fileNameDisplay.textContent = '✔ ' + fileInput.files[0].name.toUpperCase();
+  });
+  fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('drag-over'); });
+  fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('drag-over'));
+  fileDrop.addEventListener('drop', e => {
+    e.preventDefault(); fileDrop.classList.remove('drag-over');
+    if(e.dataTransfer.files[0]){ fileInput.files = e.dataTransfer.files; fileNameDisplay.textContent = '✔ ' + e.dataTransfer.files[0].name.toUpperCase(); }
+  });
+
+  /* ── MODE SWITCHING ── */
+  const modeHack   = document.getElementById('modeHack');
+  const modeDefend = document.getElementById('modeDefend');
+  document.querySelectorAll('input[name="mode"]').forEach(r => {
+    r.addEventListener('change', () => {
+      modeHack.className   = 'mode-option' + (document.querySelector('input[value="hacked"]').checked ? ' selected-hack' : '');
+      modeDefend.className = 'mode-option' + (document.querySelector('input[value="defended"]').checked ? ' selected-defend' : '');
+      updateLiveMonitor();
+    });
+  });
+
+  /* ── ANALYZE ── */
+  let sessionData = null;
+  const btn     = document.getElementById('analyzeBtn');
+  const btnText = document.getElementById('btnText');
+  const spinner = document.getElementById('spinner');
+  const errorEl = document.getElementById('errorMsg');
+
+  btn.addEventListener('click', async () => {
+    if(!fileInput.files[0]){ showError('NO FILE SELECTED — UPLOAD AN IMAGE FIRST'); return; }
+    btnText.style.display = 'none';
+    spinner.style.display = 'block';
+    errorEl.style.display = 'none';
+    btn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    try {
+      <!-- const API_URL = '/analyze';
+      use this for local development -->
+
+      
+      const API_URL = 'https://emadhav-sentinal-api.hf.space/analyze';
+      const res = await fetch(API_URL, { method: 'POST', body: formData });
+      if(!res.ok) throw new Error((await res.json()).detail || 'SERVER ERROR');
+      sessionData = await res.json();
+
+      // --- BASELINE ---
+      const bi = document.getElementById('baseImg');
+      const bp = document.getElementById('basePlaceholder');
+      bi.src = 'data:image/jpeg;base64,' + sessionData.baseline.image;
+      bi.style.display = 'block'; bp.style.display = 'none';
+      document.getElementById('baseLabel').textContent = sessionData.baseline.label;
+      document.getElementById('baseConf').textContent  = sessionData.baseline.confidence + '% CONFIDENCE';
+      document.getElementById('baseStatus').textContent = 'BASELINE LOCKED';
+      const bc = parseFloat(sessionData.baseline.confidence);
+      setTimeout(() => { document.getElementById('baseBar').style.width = bc + '%'; }, 100);
+
+      updateLiveMonitor();
+    } catch(err){ showError('ERROR: ' + err.message); }
+    finally {
+      btnText.style.display = 'inline';
+      spinner.style.display = 'none';
+      btn.disabled = false;
+    }
+  });
+
+  function updateLiveMonitor(){
+    if(!sessionData) return;
+    const mode = document.querySelector('input[name="mode"]:checked').value;
+    const data = sessionData[mode];
+
+    const li = document.getElementById('liveImg');
+    const lp = document.getElementById('livePlaceholder');
+    li.style.opacity = 0;
+    setTimeout(() => {
+      li.src = 'data:image/jpeg;base64,' + data.image;
+      li.style.display = 'block'; lp.style.display = 'none';
+      document.getElementById('liveLabel').textContent = data.label;
+      document.getElementById('liveConf').textContent  = data.confidence + '% CONFIDENCE';
+      const conf = parseFloat(data.confidence);
+
+      if(mode === 'hacked'){
+        document.getElementById('liveHeader').style.borderColor = 'rgba(255,0,110,0.3)';
+        document.getElementById('liveDot').style.background     = 'var(--neon-pink)';
+        document.getElementById('liveHeaderText').textContent   = 'MON-02 // ⚠ SYSTEM COMPROMISED';
+        document.getElementById('liveStatus').textContent       = '// THREAT ACTIVE';
+        document.getElementById('liveStatusBadge').className    = 'monitor-status status-threat';
+        document.getElementById('liveStatusBadge').textContent  = '⚠ ADVERSARIAL ATTACK DETECTED';
+        document.getElementById('liveConf').style.color         = 'var(--neon-pink)';
+        document.getElementById('liveBar').className            = 'conf-bar bar-threat';
+      } else {
+        document.getElementById('liveHeader').style.borderColor = 'rgba(57,255,20,0.3)';
+        document.getElementById('liveDot').style.background     = 'var(--neon-green)';
+        document.getElementById('liveHeaderText').textContent   = 'MON-02 // ✓ THREAT NEUTRALIZED';
+        document.getElementById('liveStatus').textContent       = '// PURIFICATION COMPLETE';
+        document.getElementById('liveStatusBadge').className    = 'monitor-status status-safe';
+        document.getElementById('liveStatusBadge').textContent  = '✓ THREAT NEUTRALIZED';
+        document.getElementById('liveConf').style.color         = 'var(--neon-green)';
+        document.getElementById('liveBar').className            = 'conf-bar bar-safe';
+      }
+      document.getElementById('liveBar').style.width = '0%';
+      setTimeout(() => { document.getElementById('liveBar').style.width = conf + '%'; }, 100);
+      li.style.opacity = 1;
+    }, 150);
+  }
+
+  function showError(msg){
+    errorEl.textContent = msg;
+    errorEl.style.display = 'block';
+  }
+</script>
+</body>
+</html>
