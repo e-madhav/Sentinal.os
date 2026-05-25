@@ -334,7 +334,7 @@ The trained UNet purifier:
 
 ## 👤 Author
 
-**Madhav Emineni.**
+**Madhav Emineni**
 
 [![GitHub](https://img.shields.io/badge/GitHub-e--madhav-181717?style=flat-square&logo=github)](https://github.com/e-madhav)
 [![HuggingFace](https://img.shields.io/badge/🤗%20HuggingFace-emadhav-ff9900?style=flat-square)](https://huggingface.co/emadhav)
