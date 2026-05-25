@@ -1093,10 +1093,6 @@
     formData.append('file', fileInput.files[0]);
 
     try {
-      <!-- const API_URL = '/analyze';
-      use this for local development -->
-
-      
       const API_URL = 'https://emadhav-sentinal-api.hf.space/analyze';
       const res = await fetch(API_URL, { method: 'POST', body: formData });
       if(!res.ok) throw new Error((await res.json()).detail || 'SERVER ERROR');
