@@ -7,6 +7,7 @@
   <title>SENTINAL.OS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
     :root {
       --neon-cyan: #00f5ff;
@@ -125,11 +126,6 @@
     }
 
     /* ── HEADER ── */
-    header {
-      text-align: center;
-      margin-bottom: 40px;
-      animation: fadeDown 0.8s ease both;
-    }
     .header-eyebrow {
       font-family: 'Share Tech Mono', monospace;
       font-size: 11px;
@@ -180,7 +176,6 @@
       border-radius: 2px;
       position: relative;
       overflow: hidden;
-      animation: fadeUp 0.6s ease both;
     }
     .panel::before {
       content: '';
@@ -352,9 +347,6 @@
     @media(max-width:600px){ .monitors-grid{ grid-template-columns:1fr; } }
 
     /* ── MONITOR ── */
-    .monitor { animation: fadeUp 0.7s ease both; }
-    .monitor:nth-child(2) { animation-delay: 0.1s; }
-
     .monitor-screen {
       width: 100%;
       aspect-ratio: 1;
@@ -460,7 +452,6 @@
       border: 1px solid var(--border-glow);
       border-radius: 2px;
       display: flex; gap: 0; align-items: center;
-      animation: fadeUp 0.9s ease both;
     }
     .process-step {
       flex: 1; text-align: center;
@@ -759,6 +750,64 @@
     }
     .placeholder-icon { font-size: 2.5rem; opacity: 0.2; }
     .placeholder-text { font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 3px; color: rgba(0,245,255,0.2); }
+
+    /* ── HERO / 3D SENTINEL CORE ── */
+    .hero-3d {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      z-index: 10;
+      text-align: center;
+    }
+    .hero-content { position: relative; z-index: 3; padding: 0 20px; }
+    .hero-content::before {
+      content: '';
+      position: absolute;
+      inset: -70px -60px;
+      background: radial-gradient(ellipse at center, rgba(2,4,9,0.82) 0%, rgba(2,4,9,0.55) 45%, transparent 75%);
+      z-index: -1;
+      pointer-events: none;
+    }
+    .hero-content .logo { animation: logoShift 4s linear infinite, fadeDown 0.9s ease both; }
+    .hero-content .header-eyebrow { animation: blink 3s step-end infinite, fadeDown 0.7s ease both; }
+    .hero-content .header-sub { animation: fadeDown 1.1s ease both; }
+
+    .scroll-cue {
+      margin-top: 56px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px; letter-spacing: 5px;
+      color: rgba(0,245,255,0.5);
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      animation: fadeDown 1.4s ease both;
+    }
+    .scroll-cue .cue-arrow {
+      font-size: 18px;
+      animation: cueBounce 1.8s ease-in-out infinite;
+    }
+    @keyframes cueBounce {
+      0%,100% { transform: translateY(0); opacity: 0.35; }
+      50% { transform: translateY(8px); opacity: 1; }
+    }
+
+    /* ── SCROLL-TRIGGERED REVEAL ── */
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(38px) rotateX(-6deg);
+      transform-origin: top center;
+      transition: opacity 0.9s cubic-bezier(.2,.8,.2,1), transform 0.9s cubic-bezier(.2,.8,.2,1);
+    }
+    [data-reveal].revealed { opacity: 1; transform: translateY(0) rotateX(0deg); }
+
+    /* parents that host tilting/rotating children need a viewing perspective */
+    .main-grid, .monitors-grid { perspective: 1600px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      [data-reveal] { transition: opacity 0.4s ease; transform: none !important; }
+      .scroll-cue .cue-arrow, .logo, body::after { animation: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -766,6 +815,16 @@
 <!-- Animated particle canvas -->
 <canvas id="bgCanvas"></canvas>
 <div id="cursorGlow"></div>
+
+<!-- ── HERO / SIGNATURE 3D SENTINEL CORE ── -->
+<section class="hero-3d" id="heroSection">
+  <div class="hero-content">
+    <div class="header-eyebrow">// NEURAL DEFENSE SYSTEM V2.4.1 — ONLINE</div>
+    <h1 class="logo glitch" data-text="SENTINAL.OS">SENTINAL.OS</h1>
+    <div class="header-sub">ADVERSARIAL THREAT PURIFICATION FRAMEWORK</div>
+    <div class="scroll-cue">SCROLL TO ACCESS TERMINAL<span class="cue-arrow">⌄</span></div>
+  </div>
+</section>
 
 <!-- ── ONBOARDING MODAL ── -->
 <div id="overlay">
@@ -880,14 +939,8 @@
 
 <!-- ── MAIN APP ── -->
 <div id="app">
-  <header>
-    <div class="header-eyebrow">// NEURAL DEFENSE SYSTEM V2.4.1 — ONLINE</div>
-    <h1 class="logo glitch" data-text="SENTINAL.OS">SENTINAL.OS</h1>
-    <div class="header-sub">ADVERSARIAL THREAT PURIFICATION FRAMEWORK</div>
-  </header>
-
   <!-- ticker -->
-  <div class="ticker-wrap">
+  <div class="ticker-wrap" data-reveal>
     <div class="ticker">
       <span>◈ SYSTEM NOMINAL</span>
       <span>◈ EfficientNet-B0 LOADED</span>
@@ -907,7 +960,7 @@
   <div class="main-grid">
     <!-- LEFT PANEL -->
     <div>
-      <div class="panel" style="animation-delay:0.1s">
+      <div class="panel" data-reveal style="transition-delay:0.05s">
         <div class="panel-header"><div class="panel-dot"></div>INPUT_MEDIA.SYS</div>
         <div class="panel-body">
           <div class="file-drop" id="fileDrop">
@@ -919,7 +972,7 @@
         </div>
       </div>
 
-      <div class="panel" style="margin-top:16px; animation-delay:0.2s">
+      <div class="panel" data-reveal style="margin-top:16px; transition-delay:0.15s">
         <div class="panel-header"><div class="panel-dot" style="background:var(--neon-pink); animation-duration:1.5s"></div>THREAT_ENVIRONMENT.CFG</div>
         <div class="panel-body">
           <div class="mode-label">// SELECT OPERATIONAL MODE</div>
@@ -956,7 +1009,7 @@
     <div>
       <div class="monitors-grid">
         <!-- Monitor 1: Baseline -->
-        <div class="monitor">
+        <div class="monitor" data-reveal style="transition-delay:0.1s">
           <div class="panel-header" style="border-radius:2px 2px 0 0"><div class="panel-dot"></div>MON-01 // CLEAN REFERENCE</div>
           <div class="monitor-screen" id="baseScreen">
             <div class="placeholder-img" id="basePlaceholder">
@@ -977,7 +1030,7 @@
         </div>
 
         <!-- Monitor 2: Live/Active -->
-        <div class="monitor" id="liveMonitor">
+        <div class="monitor" id="liveMonitor" data-reveal style="transition-delay:0.2s">
           <div class="panel-header" id="liveHeader" style="border-radius:2px 2px 0 0"><div class="panel-dot" id="liveDot"></div><span id="liveHeaderText">MON-02 // ACTIVE SENSOR</span></div>
           <div class="monitor-screen" id="liveScreen">
             <div class="placeholder-img" id="livePlaceholder">
@@ -999,7 +1052,7 @@
       </div>
 
       <!-- Process strip -->
-      <div class="process-strip" style="animation-delay:0.3s">
+      <div class="process-strip" data-reveal style="transition-delay:0.25s">
         <div class="process-step">
           <div class="step-icon">🔍</div>
           <div class="step-title">DETECT</div>
@@ -1047,52 +1100,149 @@
   window.addEventListener('scroll', handleScroll);
   document.getElementById('modal').addEventListener('scroll', handleScroll);
 
-  /* ── PARTICLE CANVAS ── */
-  const canvas = document.getElementById('bgCanvas');
-  const ctx = canvas.getContext('2d');
-  let W, H, particles = [];
-  function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
-  resize(); window.addEventListener('resize', resize);
+  /* ── 3D SENTINEL CORE BACKGROUND (Three.js, GPU-rendered, 60fps+) ── */
+  (function initSentinelCore(){
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const canvas = document.getElementById('bgCanvas');
+    if (!window.THREE || !canvas) return; // fail-quiet if CDN blocked — page still fully works
 
-  class Particle {
-    constructor(){
-      this.x = Math.random() * W;
-      this.y = Math.random() * H;
-      this.vx = (Math.random() - 0.5) * 0.3;
-      this.vy = (Math.random() - 0.5) * 0.3;
-      this.r = Math.random() * 1.2 + 0.3;
-      this.a = Math.random() * 0.4 + 0.05;
-    }
-    update(){ this.x += this.vx; this.y += this.vy; if(this.x<0||this.x>W) this.vx*=-1; if(this.y<0||this.y>H) this.vy*=-1; }
-    draw(){
-      ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
-      ctx.fillStyle = `rgba(0,245,255,${this.a})`; ctx.fill();
-    }
-  }
-  for(let i=0; i<120; i++) particles.push(new Particle());
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
 
-  function drawLines(){
-    for(let i=0;i<particles.length;i++){
-      for(let j=i+1;j<particles.length;j++){
-        const dx=particles[i].x-particles[j].x, dy=particles[i].y-particles[j].y;
-        const d=Math.sqrt(dx*dx+dy*dy);
-        if(d<120){
-          ctx.beginPath();
-          ctx.moveTo(particles[i].x,particles[i].y);
-          ctx.lineTo(particles[j].x,particles[j].y);
-          ctx.strokeStyle=`rgba(0,245,255,${0.05*(1-d/120)})`;
-          ctx.lineWidth=0.5; ctx.stroke();
-        }
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 3000);
+    camera.position.z = 640;
+
+    /* layered wireframe icosahedra = the signature "sentinel core" */
+    const coreGroup = new THREE.Group();
+    const coreColors = [0x00f5ff, 0xbf00ff, 0xff006e];
+    coreColors.forEach((color, i) => {
+      const geo = new THREE.IcosahedronGeometry(88 + i * 36, 1);
+      const mat = new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.24 - i * 0.055 });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.userData.axis = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
+      mesh.userData.speed = 0.16 + i * 0.08;
+      coreGroup.add(mesh);
+    });
+    scene.add(coreGroup);
+
+    /* drifting data-particle field, GPU-instanced via THREE.Points */
+    const COUNT = window.innerWidth < 700 ? 220 : 420;
+    const positions = new Float32Array(COUNT * 3);
+    const speeds = new Float32Array(COUNT);
+    for (let i = 0; i < COUNT; i++) {
+      positions[i * 3]     = (Math.random() - 0.5) * 1700;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 1000;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 900;
+      speeds[i] = 6 + Math.random() * 14;
+    }
+    const particleGeo = new THREE.BufferGeometry();
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const particleMat = new THREE.PointsMaterial({ color: 0x00f5ff, size: 2.4, transparent: true, opacity: 0.55, sizeAttenuation: true });
+    const particleField = new THREE.Points(particleGeo, particleMat);
+    scene.add(particleField);
+
+    function resize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+    window.addEventListener('resize', resize);
+
+    /* mouse + scroll parallax, sampled cheaply and applied inside the render loop */
+    let mouseX = 0, mouseY = 0;
+    window.addEventListener('mousemove', e => {
+      mouseX = e.clientX / window.innerWidth - 0.5;
+      mouseY = e.clientY / window.innerHeight - 0.5;
+    }, { passive: true });
+
+    let scrollT = 0;
+    function readScroll() {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      scrollT = max > 0 ? window.scrollY / max : 0;
+    }
+    window.addEventListener('scroll', readScroll, { passive: true });
+    readScroll();
+
+    const clock = new THREE.Clock();
+    function renderFrame() {
+      const dt = Math.min(clock.getDelta(), 0.05);
+
+      coreGroup.children.forEach(mesh => mesh.rotateOnAxis(mesh.userData.axis, mesh.userData.speed * dt));
+      coreGroup.rotation.y += 0.06 * dt;
+
+      const arr = particleGeo.attributes.position.array;
+      for (let i = 0; i < COUNT; i++) {
+        arr[i * 3 + 1] += speeds[i] * dt;
+        if (arr[i * 3 + 1] > 500) arr[i * 3 + 1] = -500;
       }
+      particleGeo.attributes.position.needsUpdate = true;
+
+      if (!reduceMotion) {
+        camera.position.x += (mouseX * 130 - camera.position.x) * 0.04;
+        camera.position.y += (-mouseY * 90 - camera.position.y) * 0.04;
+        camera.position.z = 640 + scrollT * 280;
+        camera.lookAt(scene.position);
+      }
+
+      renderer.render(scene, camera);
     }
-  }
-  function animate(){
-    ctx.clearRect(0,0,W,H);
-    particles.forEach(p=>{ p.update(); p.draw(); });
-    drawLines();
-    requestAnimationFrame(animate);
-  }
-  animate();
+
+    if (reduceMotion) {
+      renderFrame(); // static single frame — no continuous animation
+    } else {
+      (function tick(){ renderFrame(); requestAnimationFrame(tick); })();
+    }
+  })();
+
+  /* ── SCROLL-TRIGGERED REVEALS ── */
+  (function initReveals(){
+    const targets = document.querySelectorAll('[data-reveal]');
+    if (!targets.length) return;
+    if (!('IntersectionObserver' in window)) {
+      targets.forEach(el => el.classList.add('revealed'));
+      return;
+    }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' });
+    targets.forEach(el => io.observe(el));
+  })();
+
+  /* ── 3D HOVER TILT ON PANELS / MONITORS ── */
+  (function initTilt(){
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const canHover = window.matchMedia('(hover: hover)').matches;
+    if (reduceMotion || !canHover) return;
+
+    document.querySelectorAll('.panel, .monitor-screen').forEach(el => {
+      let targetX = 0, targetY = 0, curX = 0, curY = 0, rafId = null;
+      function loop(){
+        curX += (targetX - curX) * 0.15;
+        curY += (targetY - curY) * 0.15;
+        el.style.transform = `perspective(900px) rotateX(${curY.toFixed(2)}deg) rotateY(${curX.toFixed(2)}deg)`;
+        if (Math.abs(targetX - curX) > 0.02 || Math.abs(targetY - curY) > 0.02) {
+          rafId = requestAnimationFrame(loop);
+        } else { rafId = null; }
+      }
+      el.addEventListener('mousemove', e => {
+        const r = el.getBoundingClientRect();
+        targetX = ((e.clientX - r.left) / r.width - 0.5) * 9;
+        targetY = -((e.clientY - r.top) / r.height - 0.5) * 9;
+        if (!rafId) rafId = requestAnimationFrame(loop);
+      });
+      el.addEventListener('mouseleave', () => {
+        targetX = 0; targetY = 0;
+        if (!rafId) rafId = requestAnimationFrame(loop);
+      });
+    });
+  })();
 
   /* ── CURSOR GLOW ── */
   const glow = document.getElementById('cursorGlow');
